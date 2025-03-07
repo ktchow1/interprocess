@@ -23,7 +23,7 @@ endif()
 ### (1) include ###
 ###################
 include_directories(
-    include 
+    interprocess/include 
     /mnt/d/dev/cpp_dependency/boost_1_84_0 
 )
 
@@ -31,7 +31,7 @@ include_directories(
 ### (2) source ###
 ##################
 file(GLOB SOURCES
-     "src/*.cpp" 
+     "interprocess/src/*.cpp" 
 )
 add_executable(Test ${SOURCES})       # for building executable
 # add_library(Test STATIC ${SOURCES}) # for building static lib .a
