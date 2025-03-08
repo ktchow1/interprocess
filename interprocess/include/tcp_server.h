@@ -1,53 +1,58 @@
-#include<iostream>
-#include<cstdint>
-#include<string>
-#include<sys/socket.h> 
-#include<arpa/inet.h> 
-#include<unistd.h> // read & write
+#pragma once
+#include<interprocess.h>
 
-class tcp_session
+
+// **************************************************************************** //
+// This server can serve only client at time, due to the sync read in remark 1. 
+// Replace it with async read to generalize TCP server to serve multi clients.
+// **************************************************************************** //
+namespace ipc
 {
-public:
-    tcp_session(int fd_) : fd(fd_) {}
-   ~tcp_session() 
+    class tcp_session
     {
-        if (fd > 0) ::close(fd);
-    }
-
-public:
-    bool run()
-    {
-        std::cout << "\n[TCP server] Connection done" << std::flush;
-        while(true)
+    public:
+        tcp_session(int fd_) : fd(fd_) {}
+       ~tcp_session() 
         {
-            // ******************** //
-            // *** READ & WRITE *** //
-            // ******************** //
-            int read_size = ::recv(fd ,buf, size, 0);
-            if (read_size > 0)
+            if (fd > 0) ::close(fd);
+        }
+
+    public:
+        bool run()
+        {
+            std::cout << "\n[TCP server] Connection done" << std::flush;
+            while(true)
             {
-                ::write(fd, buf, read_size);
-            }
-            else if (read_size == 0)
-            {
-                std::cout << "\n[TCP server] Disconnected" << std::flush;
-                return true;
-            }
-            else
-            {
-                std::cout << "\n[TCP server] Read-failure" << std::flush;
-                return false;
+                // ******************** //
+                // *** READ & WRITE *** //
+                // ******************** //
+                int read_size = ::recv(fd ,buf, size, 0);
+                if (read_size > 0)
+                {
+                    ::write(fd, buf, read_size);
+                }
+                else if (read_size == 0)
+                {
+                    std::cout << "\n[TCP server] Disconnected" << std::flush;
+                    return true;
+                }
+                else
+                {
+                    std::cout << "\n[TCP server] Read-failure" << std::flush;
+                    return false;
+                }
             }
         }
-    }
 
-private:
-    static const std::uint32_t size = 4096;
+    private:
+        static const std::uint32_t size = 4096;
 
-private:
-    int fd;
-    char buf[size];
-};
+    private:
+        int fd;
+        char buf[size];
+    };
+}
+
 
 // **************************************************************** //
 // Step 1 : Create socket
@@ -55,53 +60,55 @@ private:
 // Step 3 : Put socket to listening mode (become a passive socket)
 // Step 4 : Accept new connection to spawn an active socket
 // **************************************************************** //
-class tcp_server
+namespace ipc
 {
-public:
-    // Step 1 : Create socket
-    tcp_server(std::uint16_t port) : fd(::socket(AF_INET, SOCK_STREAM, 0))
+    class tcp_server
     {
-        if (fd == -1)
+    public:
+        // Step 1 : Create socket
+        tcp_server(std::uint16_t port) : fd(::socket(AF_INET, SOCK_STREAM, 0))
         {
-            throw std::runtime_error("[TCP server] Cannot create socket");
+            if (fd == -1)
+            {
+                throw std::runtime_error("[TCP server] Cannot create socket");
+            }
+
+            sockaddr_in addr;
+            addr.sin_family      = AF_INET;
+            addr.sin_addr.s_addr = INADDR_ANY;
+            addr.sin_port        = htons(port);
+
+            // Step 2 : Bind socket (without query)
+            if (::bind(fd, (struct sockaddr*)&addr, sizeof(addr)) == -1)
+            {
+                throw std::runtime_error("[TCP server] Cannot bind socket");
+            }
+
+            // Step 3 : Listen mode
+            ::listen(fd,3);
         }
 
-        sockaddr_in addr;
-        addr.sin_family      = AF_INET;
-        addr.sin_addr.s_addr = INADDR_ANY;
-        addr.sin_port        = htons(port);
-
-        // Step 2 : Bind socket (without query)
-        if (::bind(fd, (struct sockaddr*)&addr, sizeof(addr)) == -1)
+       ~tcp_server() 
         {
-            throw std::runtime_error("[TCP server] Cannot bind socket");
+            if (fd > 0) ::close(fd);
         }
 
-        // Step 3 : Listen mode
-        ::listen(fd,3);
-    }
-
-   ~tcp_server() 
-    {
-        if (fd > 0) ::close(fd);
-    }
-
-public:
-    tcp_session accept()
-    {
-        sockaddr_in client_addr;
-        socklen_t socket_len = sizeof(sockaddr_in);
-
-        // Step 4 : Accept connection and spawn active-socket
-        int client_fd = ::accept(fd, (struct sockaddr*)(&client_addr), &socket_len);
-        if (client_fd < 0)
+    public:
+        tcp_session accept()
         {
-            throw std::runtime_error("[TCP server] Cannot accept connection");
+            sockaddr_in client_addr;
+            socklen_t socket_len = sizeof(sockaddr_in);
+
+            // Step 4 : Accept connection and spawn active-socket
+            int client_fd = ::accept(fd, (struct sockaddr*)(&client_addr), &socket_len);
+            if (client_fd < 0)
+            {
+                throw std::runtime_error("[TCP server] Cannot accept connection");
+            }
+            return tcp_session(client_fd);
         }
-        return tcp_session(client_fd);
-    }
 
-private:
-    int fd;
-};
-
+    private:
+        int fd;
+    };
+}

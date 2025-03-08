@@ -33,8 +33,8 @@ int main(int argc, char* argv[])
     // invoke server by one dummy argument
     // invoke client by no extra argument
     // ******************************************** //
-//  test_tcp(argc > 1);
-    test_udp(argc > 1);
+    test_tcp(argc > 1);
+//  test_udp(argc > 1);
     std::cout << "\n\n\n";
     return 0;
 }
