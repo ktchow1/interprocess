@@ -25,6 +25,7 @@ Router is a computer with at least 2 network interface cards (NIC)
                                                                                        
 
 
+
 For example, if device 15 is a mobile phone, which has 3 NICs:
 * NIC3 for connecting to WAN, via mobile data provided by ISP, it uses public IP (some ISPs can use private IP)
 * NIC4 for connecting to LAN, via wifi provided by router, it uses public IP 
@@ -41,6 +42,7 @@ Uniqueness of IPs
 
 
 
+
 The IP address has 4 bytes, so accommodate 2^32 (around 4*10^9) devices. 
 
   1.  0.0.0 - 223.255.255.255 =  public IP in WAN
@@ -50,6 +52,7 @@ The IP address has 4 bytes, so accommodate 2^32 (around 4*10^9) devices.
 127.  0.0.0 - 127.255.255.255 =  loop back in same host (IPC in same host)
 224.  0.0.0 - 239.255.255.255 = logical IP in LAN (for UDP multicast to devices that listen to that IP)
               255.255.255.255 = logical IP in LAN (for broadcast to all devices in the LAN)
+
 
 
 
@@ -85,9 +88,11 @@ Private IPs are unique within the same LAN (across all subnets)
 
 
 
+
 Unicast IP (TCP unicast & UDP unicast) vs multicast IP in a LAN
 *   unicast IP in a LAN is    real address, binding to physical NIC
 * multicast IP in a LAN is virtual address, not bind to NIC, it is a channel for broadcasting
+
 
 
 
@@ -108,70 +113,80 @@ Loopback interface
 We can get the NIC info with
 * ipconfig in windows
 * ifconfig in linux
-* ifconfig in WSL cannot detect wifi LAN
+* ifconfig in WSL cannot detect wifi LAN (so better use ipconfig in windows)
 
-Running ipconfig can list all NICs : 
-
+Running ipconfig can list all NICs, for example, running ipconfig in current PC : 
  
+* Ethernet . . . . . . . . . . . . . : Media disconnected <--- since I have not connected cable yet
+* Wireless LAN 
+    IPv4 Address . . . . . . . . . . : 192.168.1.156      <--- this is IP of current PC
+    Subnet Mask. . . . . . . . . . . : 255.255.255.0
+    Default Gateway. . . . . . . . . : 192.168.1.1        <--- this is IP of router NIC for this subnet
+
+In order to communicate with internet, current PC has to send message to gateway (192.168.1.1) first.   
+
+
+
+Running netstat, while current PC runs TCP echo server and TCP echo client, possible options 
+* t = TCP
+* u = UDP
+* a = all states (LISTEN + ESTABLISHED)
+* p = process ID
+
+> netstat -tuanp
+
+Proto   Recv-Q    Send-Q    Local Address     Foreign Address   State         PID      Program name
+---------------------------------------------------------------------------------------------------------
+tcp          0         0      0.0.0.0:12345     0.0.0.0:*       LISTEN        145054   ./build/debug/Test <--- server acccepting new client
+tcp          0         0    127.0.0.1:12345   127.0.0.1:49400   ESTABLISHED   145054   ./build/debug/Test <--- server socket connected to client
+tcp          0         0    127.0.0.1:49400   127.0.0.1:12345   ESTABLISHED   145149   ./build/debug/Test <--- client socket connected to server
 
 
 
 
-
-ifconfig shows the default gateway for each NIC
-the LAN private IP, through which the device can get access to internet WAN 
-
-in above example
-NIC4's default gateway to WAN is IP1 
-
-
-dick@DellDick:/mnt/d/dev/cpp/interprocess$ netstat -tupna
-
-Active Internet connections (servers and established)
-Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name
-tcp        0      0 0.0.0.0:12345           0.0.0.0:*               LISTEN      145054/./build/debu
-tcp        0      0 127.0.0.1:49400         127.0.0.1:12345         ESTABLISHED 145149/./build/debu
-tcp        0      0 127.0.0.1:12345         127.0.0.1:49400         ESTABLISHED 145054/./build/debu
-
-
-WSL cannot access wifi lan via ifconfig (WSL)
-but i can see all interface in ipconfig (windows cmd)
-
+**************************
+*** socket programming ***
+**************************
+What is bind?
+* for server in both TCP and UDP, we need to call bind, which picks the desired NIC (or all NICs if you like)
+* for client in both TCP and UDP, we do not need to call bind
 
 
 Difference between recv() and recvfrom(), send() and sendto()
-* recv()     = receive message from specific client with connection
-* recvfrom() = receive message from specific client without connection
-* send()     = 
-* sendto()   = 
-
-
-For server in both TCP and UDP, we need to call bind.
-For client in both TCP and UDP, we do not need to call bind.
+* recv()     = recv message from specific client with connection, for TCP unicast
+* send()     = send message from specific client with connection, for TCP unicast
+* recvfrom() = recv message from specific client without connection, for UDP unicast
+* sendto()   = send message from specific client without connection, for UDP unicast
 
 We can still call connect() for UDP, but ...
-* it does not meanreal connection
-* it means remote address is fixed
+* it does not mean a real connection, a UDP is always connectionless
+* it means remote address is fixed, no need to call recvfrom()/sendto()
 
-
-What is unicast IP and multicast IP?
 
 
 
 ************************************
 *** DNS, NAT and port forwarding ***
 ************************************
+How does a device A in LAN under router A, communicate with another device B in LAN under router B, via WAN?
 
+Suppose we have :
+* router A public IP is IP_A
+* device A private IP in its LAN is IP_a
+* router B public IP is IP_B
+* device B private IP in its LAN is IP_b
+* device A is client requesting for service from device B
+* device B is server with URL www.B.com
 
-How does the following work ?
+It needs to go through the following steps :  
+* DNS server 
 * network address translation (NAT) 
 * port forwarding
-* DNS server 
 
 
 
 
-
+[DNS server]
 
 
 
@@ -184,9 +199,6 @@ DNS
 
 
 
-
-UDP   unicast IP = 
-UDP multicast IP = 
 
 
 
