@@ -73,12 +73,12 @@ namespace ipc
                 throw std::runtime_error("[TCP server] Cannot create socket");
             }
 
+            // Step 2 : Bind to one or any NIC
             sockaddr_in addr;
             addr.sin_family      = AF_INET;
-            addr.sin_addr.s_addr = INADDR_ANY;
+            addr.sin_addr.s_addr = INADDR_ANY; 
             addr.sin_port        = htons(port);
 
-            // Step 2 : Bind socket (without query)
             if (::bind(fd, (struct sockaddr*)&addr, sizeof(addr)) == -1)
             {
                 throw std::runtime_error("[TCP server] Cannot bind socket");

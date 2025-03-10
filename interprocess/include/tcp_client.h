@@ -15,16 +15,31 @@ namespace ipc
                 throw std::runtime_error("[TCP client] Cannot create socket");
             }
 
-            sockaddr_in addr;
-            addr.sin_family      = AF_INET;
-            addr.sin_addr.s_addr = inet_addr(ip.c_str());
-            addr.sin_port        = htons(port);
+/*
+            // Step 2 : Bind to one NIC (if there are multi NICs)
+            sockaddr_in client_addr;
+            client_addr.sin_family      = AF_INET;
+        //  client_addr.sin_addr.s_addr = inet_addr("192.168.1.34"); 
+            client_addr.sin_addr.s_addr = inet_addr("192.168.1.156"); // hard code desired private IP
+            client_addr.sin_port        = 0;                          // OS picks available port
 
-            // Step 2 : Connection
-            if (::connect(fd, (struct sockaddr*)(&addr), sizeof(addr)) == -1)
+            if (::bind(fd, (struct sockaddr*)(&client_addr), sizeof(client_addr)) <= 0)
+            {
+                throw std::runtime_error("[TCP client] Cannot bind NIC");
+            } */
+
+
+            // Step 3 : Connection
+            sockaddr_in server_addr;
+            server_addr.sin_family      = AF_INET;
+            server_addr.sin_addr.s_addr = inet_addr(ip.c_str());
+            server_addr.sin_port        = htons(port);
+
+            if (::connect(fd, (struct sockaddr*)(&server_addr), sizeof(server_addr)) < 0)
             {
                 throw std::runtime_error("[TCP client] Cannot connect server");
             }
+
             std::cout << "\n[TCP client] Connection done" << std::flush;
         }
 
@@ -32,6 +47,7 @@ namespace ipc
         {
             if (fd > 0) ::close(fd);
         }
+
 
     public:
         bool run()
@@ -41,6 +57,11 @@ namespace ipc
                 std::cout << "\n[TCP client] Enter message : " << std::flush;
                 std::string message;
                 std::cin >> message;
+                if (message == "quit")
+                {
+                    std::cout << "[TCP client] Disconnected by client" << std::flush;
+                    return true;
+                }
 
                 // ************* //
                 // *** WRITE *** //
@@ -53,14 +74,14 @@ namespace ipc
                 // ************ //
                 // *** READ *** //
                 // ************ //
-                int read_size = ::recv(fd , buf, size, 0);
+                int read_size = ::recv(fd, buf, size, 0);
                 if (read_size > 0)
                 {
                     std::cout << "[TCP client] Received : " << std::string{buf, (size_t)read_size};
                 }
                 else if (read_size)
                 {
-                    std::cout << "[TCP client] Disconnected" << std::flush;
+                    std::cout << "[TCP client] Disconnected by server" << std::flush;
                     return true;
                 }
                 else
