@@ -195,7 +195,7 @@ It needs to go through the following steps :
 
 
 [Domain Name System DNS]
-Firstly, when we type URL into Chrome, Chrome needs to convert this URL into public IP, via these steps :
+When we type URL into Chrome, Chrome needs to convert this URL into public IP, via these steps :
 * check if URL exists in Chrome's cache, if yes, just read the corresponding IP
 * check if URL exists in windows' cache, if yes, just read the corresponding IP 
 * send DNS query to DNS resolver, there are :
@@ -207,8 +207,7 @@ Firstly, when we type URL into Chrome, Chrome needs to convert this URL into pub
 
 
 [Network Address Translation NAT]
-Secondly, device A sends this request-packet to router A :
-
+Device A sends request-packet to router A :
 {
     source IP   : IP_a   
     source port : 49400 (randomly assigned port by OS when connection is made)
@@ -216,8 +215,7 @@ Secondly, device A sends this request-packet to router A :
     destin port : 80    (depends on the service device A needs from device B)
 }
 
-Router A, on receiving this packet, will replace the source address by its public IP, this conversion is called NAT)
-
+Router A replaces source address by its public IP, this conversion is called NAT :
 {
     source IP   : IP_A   
     source port : 12345 (randomly assigned port by router)
@@ -225,20 +223,19 @@ Router A, on receiving this packet, will replace the source address by its publi
     destin port : 80 
 }
 
-Router A will store the following in a map, and send the packet to router B via WAN.
+Router A sends the packet to router B via WAN, and stores the following key-value in a map :
 
-{IP_a, 49400} : {IP_A, 12345}
+   {IP_a, 49400} : {IP_A, 12345}
 
 
 
 
 [Port forwarding]
-Router B, on receiving the packet, it will check against its config. There should be a map like : 
+Router B receives the packet, check against a manual config, to forward all requests for that service to device B : 
 
-{IP_B, 80} : {IP_b, 80} 
+   {IP_B, 80} : {IP_b, 80} 
 
-then router B will change the packet into the following, and forward it to device B.
-
+Router B replaces destination address by device B private IP, this conversion is called port forwarding :
 {
     source IP   : IP_A   
     source port : 12345 
@@ -250,8 +247,7 @@ then router B will change the packet into the following, and forward it to devic
 
 
 [Return trip]
-Device B then process the request and create a reply, send it to router B : 
-
+Device B processes the request and creates a reply, send it back to router B with : 
 {
     source IP   : IP_b 
     source port : 80 
@@ -259,8 +255,7 @@ Device B then process the request and create a reply, send it to router B :
     destin port : 12345 
 }
 
-Router B performs NAT, the packet becomes :
-
+Router B receives the reply, performs NAT to replace source address by public IP :
 {
     source IP   : IP_B 
     source port : 80 
@@ -268,8 +263,7 @@ Router B performs NAT, the packet becomes :
     destin port : 12345 
 }
  
-Router A receives the reply, and re-map the private IP as : 
-
+Router A receives the reply, performs port forwarding to replace destination address by private IP : 
 {
     source IP   : IP_B 
     source port : 80 
