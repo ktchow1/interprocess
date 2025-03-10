@@ -18,7 +18,7 @@ Router is a computer with at least 2 network interface cards (NIC)
                    |            | NIC1 with   | <------------> devices  1-10        +---------------------------+
              WAN   |            | private IP1 |                                     | [device 15, mobile phone] |
   internet <-----> | NIC0 with  |             |                                     |                           |
-                   | public IP0 | NIC2 with   |  LAN subnet 1                       | NIC3 for with public  IP3 | <---> ISP mobile data                           | 
+                   | public IP0 | NIC2 with   |  LAN subnet 1                       | NIC3 for with public  IP3 | <---> ISP mobile data
                    |            | private IP2 | <------------> devices 11-20 <----> | NIC4 for with private IP4 | 
                    |            |             |                                     | NIC5 for with 127.0.0.1   | <---> same host communication  
                    +--------------------------+                                     +---------------------------+
@@ -75,11 +75,11 @@ Private IPs are unique within the same LAN (across all subnets)
   subnet 1 = 192.168.2.0, with subnet mask = 255.255.255.128
   
   then we have : 
-  subnet 0 network   address = 192.168.1.0   <--- not assigned to any device in subnet 0
-  subnet 0 broadcast address = 192.168.1.255 <--- not assigned to any device in subnet 0
-  subnet 0 1st  usable IP    = 192.168.1.1   <--- assigned to router, i.e. IP1
-  subnet 0 2nd  usable IP    = 192.168.1.2   <--- assigned to device 1
-  subnet 0 last usable IP    = 192.168.1.254
+  subnet 0 network   address = 192.168.1.0   <--- not assigned to any device in subnet 0 (logical IP as subnet identifier)
+  subnet 0 broadcast address = 192.168.1.255 <--- not assigned to any device in subnet 0 (logical IP as broadcast channel)
+  subnet 0 1st  usable IP    = 192.168.1.1   <--- assigned to router, i.e. IP1           (physical IP to real device)
+  subnet 0 2nd  usable IP    = 192.168.1.2   <--- assigned to device 1                   (physical IP to real device)
+  subnet 0 last usable IP    = 192.168.1.254                                             (physical IP to real device)
   subnet 1 network   address = 192.168.2.0   <--- not assigned to any device in subnet 1
   subnet 1 broadcast address = 192.168.2.255 <--- not assigned to any device in subnet 1
   subnet 1 1st  usable IP    = 192.168.2.1   <--- assigned to router, i.e. IP2
@@ -103,6 +103,14 @@ Loopback interface
 * hence different apps in same host (with TCP-offload ON) cannot receive UDP multicast of each other, unless :
 - ensure sockets are created with loopback enabled ... AND
 - ensure all apps use the same TCP-offload stack
+
+
+
+
+Who assign the IPs?
+* public    IPs are assigned by ISP
+* private   IPs are assigned by router
+* multicast IPs (channels) are configured by developer / organization
 
 
 
@@ -145,7 +153,7 @@ tcp          0         0    127.0.0.1:49400   127.0.0.1:12345   ESTABLISHED   14
 
 
 **************************
-*** socket programming ***
+*** Socket programming ***
 **************************
 What is bind?
 * for server in both TCP and UDP, we need to call bind, which picks the desired NIC (or all NICs if you like)
@@ -175,7 +183,7 @@ Suppose we have :
 * device A private IP in its LAN is IP_a
 * router B public IP is IP_B
 * device B private IP in its LAN is IP_b
-* device A is client requesting for service from device B
+* device A is client requesting for service from device B (via Chrome, for example)
 * device B is server with URL www.B.com
 
 It needs to go through the following steps :  
@@ -186,34 +194,86 @@ It needs to go through the following steps :
 
 
 
-[DNS server]
+[Domain Name System DNS]
+Firstly, when we type URL into Chrome, Chrome needs to convert this URL into public IP, via these steps :
+* check if URL exists in Chrome's cache, if yes, just read the corresponding IP
+* check if URL exists in windows' cache, if yes, just read the corresponding IP 
+* send DNS query to DNS resolver, there are :
+- ISP provided DNS resolver, or
+- public DNS resolver like google's 8.8.8.8 = dns.google
+* finally, device A gets the value IP_B, make connection to IP_B
 
 
 
 
+[Network Address Translation NAT]
+Secondly, device A sends this request-packet to router A :
+
+{
+    source IP   : IP_a   
+    source port : 49400 (randomly assigned port by OS when connection is made)
+    destin IP   : IP_B
+    destin port : 80    (depends on the service device A needs from device B)
+}
+
+Router A, on receiving this packet, will replace the source address by its public IP, this conversion is called NAT)
+
+{
+    source IP   : IP_A   
+    source port : 12345 (randomly assigned port by router)
+    destin IP   : IP_B
+    destin port : 80 
+}
+
+Router A will store the following in a map, and send the packet to router B via WAN.
+
+{IP_a, 49400} : {IP_A, 12345}
 
 
-DNS 
-8.8.8.8 = dns.google
+
+
+[Port forwarding]
+Router B, on receiving the packet, it will check against its config. There should be a map like : 
+
+{IP_B, 80} : {IP_b, 80} 
+
+then router B will change the packet into the following, and forward it to device B.
+
+{
+    source IP   : IP_A   
+    source port : 12345 
+    destin IP   : IP_b  (device B private IP, as configured in router B)
+    destin port : 80 
+}
 
 
 
 
+[Return trip]
+Device B then process the request and create a reply, send it to router B : 
 
+{
+    source IP   : IP_b 
+    source port : 80 
+    destin IP   : IP_A   
+    destin port : 12345 
+}
 
+Router B performs NAT, the packet becomes :
 
+{
+    source IP   : IP_B 
+    source port : 80 
+    destin IP   : IP_A   
+    destin port : 12345 
+}
+ 
+Router A receives the reply, and re-map the private IP as : 
 
-
-TCP/UDP unicast IP =     address of a physical device (or NIC)
-  UDP multicast IP = NOT address of a physical device (or NIC)
-                   = logic channel / logical group, its virtual address
-
-private unicast IP is assigned by router (via DHCP)
-public  unicast IP is assigned by ISP (assigned to ISP's routers)
-      multicast IP is assigned by app / developer / organization
-
-  same-router-multicast (by default) covers local network only (i.e. under same router)
-across-router-multicast needs special config ... 
-
-
+{
+    source IP   : IP_B 
+    source port : 80 
+    destin IP   : IP_a   
+    destin port : 49400
+}
 
