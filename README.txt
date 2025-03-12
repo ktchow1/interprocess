@@ -278,3 +278,13 @@ Router A receives the reply, performs port forwarding to replace destination add
     destin port : 49400
 }
 
+
+
+
+*********************************
+*** North tier and south tier ***
+*********************************
+These are terms in network of datacentre. 
+* Within the rack of machines in colocation, it is a graph of devices connecting together.
+* North tier is considered the   upstream of network, which include routers.
+* South tier is considered the downstream of network, which include servers.
