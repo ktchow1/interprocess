@@ -115,15 +115,17 @@ Who assign the IPs?
 
 
 
-**************************
-*** ifconfig & netstat ***
-**************************
+*************************************
+*** ifconfig / netstat / ip route ***
+*************************************
 We can get the NIC info with
 * ipconfig in windows
 * ifconfig in linux
 * ifconfig in WSL cannot detect wifi LAN (so better use ipconfig in windows)
 
-Running ipconfig can list all NICs, for example, running ipconfig in current PC : 
+
+
+Running "ipconfig" can list all NICs, for example, running ipconfig in current PC : 
  
 * Ethernet . . . . . . . . . . . . . : Media disconnected <--- since I have not connected cable yet
 * Wireless LAN 
@@ -135,7 +137,7 @@ In order to communicate with internet, current PC has to send message to gateway
 
 
 
-Running netstat, while current PC runs TCP echo server and TCP echo client, possible options 
+Running "netstat", while current PC runs TCP echo server and TCP echo client, possible options 
 * t = TCP
 * u = UDP
 * a = all states (LISTEN + ESTABLISHED)
@@ -148,6 +150,11 @@ Proto   Recv-Q    Send-Q    Local Address     Foreign Address   State         PI
 tcp          0         0      0.0.0.0:12345     0.0.0.0:*       LISTEN        145054   ./build/debug/Test <--- server acccepting new client
 tcp          0         0    127.0.0.1:12345   127.0.0.1:49400   ESTABLISHED   145054   ./build/debug/Test <--- server socket connected to client
 tcp          0         0    127.0.0.1:49400   127.0.0.1:12345   ESTABLISHED   145149   ./build/debug/Test <--- client socket connected to server
+
+
+
+Running "ip route" 
+> ip route get xxx.yyy.zzz.ttt   <--- will give you the NIC it needs to reach that address 
 
 
 

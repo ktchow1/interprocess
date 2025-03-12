@@ -73,16 +73,18 @@ namespace ipc
                 throw std::runtime_error("[TCP server] Cannot create socket");
             }
 
-            // Step 2 : Bind to one or any NIC
-            sockaddr_in addr;
-            addr.sin_family      = AF_INET;
-            addr.sin_addr.s_addr = INADDR_ANY; 
-            addr.sin_port        = htons(port);
 
-            if (::bind(fd, (struct sockaddr*)&addr, sizeof(addr)) == -1)
+            // Step 2 : Bind to one or any NIC
+            sockaddr_in server_addr;
+            server_addr.sin_family      = AF_INET;
+            server_addr.sin_addr.s_addr = INADDR_ANY; 
+            server_addr.sin_port        = htons(port);
+
+            if (::bind(fd, (struct sockaddr*)&server_addr, sizeof(server_addr)) == -1)
             {
                 throw std::runtime_error("[TCP server] Cannot bind socket");
             }
+
 
             // Step 3 : Listen mode
             ::listen(fd,3);
@@ -97,10 +99,10 @@ namespace ipc
         tcp_session accept()
         {
             sockaddr_in client_addr;
-            socklen_t socket_len = sizeof(sockaddr_in);
+            socklen_t size_client_addr = sizeof(client_addr);
 
             // Step 4 : Accept connection and spawn active-socket
-            int client_fd = ::accept(fd, (struct sockaddr*)(&client_addr), &socket_len);
+            int client_fd = ::accept(fd, (struct sockaddr*)(&client_addr), &size_client_addr);
             if (client_fd < 0)
             {
                 throw std::runtime_error("[TCP server] Cannot accept connection");
