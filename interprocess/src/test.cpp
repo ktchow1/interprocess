@@ -13,28 +13,25 @@ int main(int argc, char* argv[])
 //  test_ipc_unnamed_pipe();   
 //  test_ipc_named_pipe(argc > 1); // with argument for producer
 //  test_ipc_shared_memory(); 
-/*
-    // Please communicate with server using TCP client (both C++ or python are OK)
+
+
+
+
+
+    if (argc == 2)  
     {
-        if (argc!=2)
-        {
-            std::cout << "\nError in input, please enter : exe 12345";
-        }
-        else
-        {
-            test_epoll_socket(std::stoi(std::string(argv[1])));
-        }
-    } */
+        std::string arg = argv[1];
+        if      (arg == "tcp_server_async") test_epoll_socket(12345);
+        else if (arg == "tcp_server")       test_tcp(true);
+        else if (arg == "tcp_client")       test_tcp(false);
+        else if (arg == "udp_server")       test_udp(true);
+        else if (arg == "udp_client")       test_udp(false);
+    }
+    else 
+    {
+        std::cout << "\nincorrect number of arg";
+    }
 
-
-    // ******************************************** //
-    // *** TCP and UDP server and client (sync) *** //
-    // ******************************************** //
-    // invoke server by one dummy argument
-    // invoke client by no extra argument
-    // ******************************************** //
-    test_tcp(argc > 1);
-//  test_udp(argc > 1);
     std::cout << "\n\n\n";
     return 0;
 }
