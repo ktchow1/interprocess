@@ -120,9 +120,9 @@ namespace ipc
        
         tcp_sync_session accept()
         {
-            // **************************************************** //
-            // *** Step 4 : accept connection and create socket *** //
-            // **************************************************** //
+            // ****************************** //
+            // *** Step 4 : accept client *** //
+            // ****************************** //
             sockaddr_in client_addr;
             socklen_t size = sizeof(client_addr);
 

@@ -1,6 +1,6 @@
 #pragma once
-#include<unordered_map>
 #include<socket.h>
+#include<unordered_map>
 
 
 // ******************************************************* //
@@ -49,17 +49,11 @@ namespace ipc
             {
                 throw std::runtime_error("[TCP async server] Cannot listen socket");
             }
-        }
 
-       ~tcp_async_server() 
-        {
-            if (m_fd_passive > 0)  ::close(m_fd_passive);
-            if (m_fd_epoll   > 0)  ::close(m_fd_epoll);
-        }
 
-    public:
-        void run()
-        {
+            // ************* //
+            // *** Epoll *** //
+            // ************* //
             m_fd_epoll = ::epoll_create1(0);
             if (m_fd_epoll < 0)
             {
@@ -70,10 +64,17 @@ namespace ipc
             {
                 throw std::runtime_error("[TCP async server] Cannot add passive socket to epoll");
             }
-            
-            // ****************** //
-            // *** Event loop *** //
-            // ****************** //
+        }
+
+       ~tcp_async_server() 
+        {
+            if (m_fd_passive > 0)  ::close(m_fd_passive);
+            if (m_fd_epoll   > 0)  ::close(m_fd_epoll);
+        }
+
+    public:
+        void run() 
+        {
             static const std::uint32_t MAX_NUM_EVENTS = 64;
             epoll_event events[MAX_NUM_EVENTS];
 

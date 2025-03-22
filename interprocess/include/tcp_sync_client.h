@@ -42,8 +42,12 @@ namespace ipc
             }
 
 
+            // ************************ //
+            // *** Step 3 : skipped *** //
+            // ************************ //
+
             // ******************************* //
-            // *** Step 3 : connect server *** //
+            // *** Step 4 : connect server *** //
             // ******************************* //
             {
                 sockaddr_in server_addr;
@@ -78,7 +82,6 @@ namespace ipc
                     std::cout << "[TCP sync client] Disconnected by client" << std::flush;
                     return true;
                 }
-
 
 
                 // ********************* //
