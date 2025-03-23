@@ -15,10 +15,10 @@ namespace ipc
                               std::uint16_t client_port) // 0 for OS-pick port, >0 for custom-pick port
                               : m_fd(::socket(AF_INET, SOCK_STREAM, 0))
         {
-            std::cout << "[TCP sync client]" << std::flush;
+            std::cout << "\n[TCP sync client]" << std::flush;
             if (m_fd < 0)
             {
-                throw std::runtime_error("[TCP sync client] Cannot create socket");
+                throw std::runtime_error("[TCP sync client] Fail to create");
             }
 
 
@@ -37,13 +37,17 @@ namespace ipc
 
                 if (::bind(m_fd, (struct sockaddr*)(&client_addr), sizeof(client_addr)) < 0)
                 {
-                    throw std::runtime_error("[TCP sync client] Cannot bind socket");
+                    throw std::runtime_error("[TCP sync client] Fail to bind");
                 } 
             }
 
 
+            // ************************ //
+            // *** Step 3 : skipped *** //
+            // ************************ //
+
             // ******************************* //
-            // *** Step 3 : connect server *** //
+            // *** Step 4 : connect server *** //
             // ******************************* //
             {
                 sockaddr_in server_addr;
@@ -53,7 +57,7 @@ namespace ipc
 
                 if (::connect(m_fd, (struct sockaddr*)(&server_addr), sizeof(server_addr)) < 0)
                 {
-                    throw std::runtime_error("[TCP sync client] Cannot connect server");
+                    throw std::runtime_error("[TCP sync client] Fail to connect");
                 }
             }
         }
@@ -65,20 +69,13 @@ namespace ipc
 
 
     public:
-        bool run()
+        void run()
         {
             while(true)
             {
-                std::cout << "\n[TCP sync client] Enter message : " << std::flush;
+                std::cout << "\n[TCP sync client] Send message: " << std::flush;
                 std::string message;
-                std::cin >> message;
-                if (message == "quit" ||
-                    message == "exit")
-                {
-                    std::cout << "[TCP sync client] Disconnected by client" << std::flush;
-                    return true;
-                }
-
+                std::getline(std::cin, message); 
 
 
                 // ********************* //
@@ -86,7 +83,7 @@ namespace ipc
                 // ********************* //
                 if (::send(m_fd, message.c_str(), message.size(), 0) < 0)
                 {
-                    throw std::runtime_error("[TCP sync client] Cannot send");
+                    throw std::runtime_error("[TCP sync client] Fail to send");
                 }
 
 
@@ -98,17 +95,17 @@ namespace ipc
                 int recv_size = ::recv(m_fd, buf, sizeof(buf), 0);
                 if (recv_size > 0)
                 {
-                    std::cout << "[TCP sync client] Received : " << std::string{buf, (size_t)recv_size};
+                    std::cout << "\n[TCP sync client] Recv message: " << std::string{buf, (size_t)recv_size} << std::flush;
                 }
                 else if (recv_size == 0)
                 {
-                    std::cout << "[TCP sync client] Disconnect from server" << std::flush;
-                    return true;
+                    std::cout << "\n[TCP sync client] Disconnect from server" << std::flush;
+                    return;
                 }
                 else
                 {
-                    std::cout << "[TCP sync client] Cannot recv" << std::flush;
-                    return false;
+                    std::cout << "\n[TCP sync client] Fail to recv" << std::flush;
+                    return;
                 }
             }
         }

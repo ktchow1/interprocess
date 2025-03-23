@@ -288,3 +288,36 @@ These are terms in network of datacentre.
 * Within the rack of machines in colocation, it is a graph of devices connecting together.
 * North tier is considered the   upstream of network, which include routers.
 * South tier is considered the downstream of network, which include servers.
+
+
+
+*********************************
+*** TCP onload vs TCP offload ***
+*********************************
+Kernel bypass = general term to skip slow "kernel space" system call
+
+it can be implemented as :
+* TCP  onload (OpenOnload) = implementing network stack in user space in CPU (need special NIC)
+* TCP offload engine (TOE) = implementing network stack in NIC               (need special NIC)
+
+NIC that is designed for TCP onload usually does not support TCP offload
+NIC that is designed for TCP offload usually does not support TCP onload
+
+Other ways to do kernel bypass (not sure what they are???) :
+* DPDK
+* XDP
+* RDMA
+
+
+
+
+
+
+
+
+
+
+
+
+
+

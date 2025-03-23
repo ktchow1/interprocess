@@ -75,6 +75,8 @@ void print_manual()
     std::cout << "\n";
     std::cout << "\n[]  means optional";
     std::cout << "\n... means variadic";
+    std::cout << "\nyou can connect tcp_async_server from tcp_sync_client ot tcp_async_client";
+    std::cout << "\nyou can connect  tcp_sync_server from tcp_sync_client ot tcp_async_client";
 }
 
 
@@ -120,11 +122,15 @@ int main(int argc, char* argv[])
         }
         else if (arg == "ac" || arg == "tcp_async_client") 
         {
-            ipc::tcp_sync_client client
+            std::vector<std::uint16_t> server_ports;
+            for(int n=2; n!=argc; ++n)
+            {
+                server_ports.push_back(std::stoi(argv[n]));
+            }
+
+            ipc::tcp_async_client client
             (
-                "127.0.0.1", 
-                get_uint(argc, argv, 2, 12345),  // server port
-                get_uint(argc, argv, 3, 0)       // client port
+                "127.0.0.1", server_ports 
             );
             client.run();
         }

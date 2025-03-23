@@ -26,7 +26,7 @@ namespace ipc
         }
 
     public:
-        bool run()
+        void run()
         {
             socklen_t socket_len = sizeof(sockaddr_in);
             while(true)
@@ -54,16 +54,14 @@ namespace ipc
                 else if (read_size)
                 {
                     std::cout << "[UDP client] Disconnected" << std::flush;
-                    return true;
+                    return;
                 }
                 else
                 {
                     std::cout << "[UDP client] Read-failure" << std::flush;
-                    return false;
+                    return;
                 }
             }
-            close(m_fd);
-            return true;
         }
 
     private:

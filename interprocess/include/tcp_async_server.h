@@ -1,6 +1,6 @@
 #pragma once
-#include<unordered_map>
 #include<socket.h>
+#include<unordered_map>
 
 
 // ******************************************************* //
@@ -16,10 +16,10 @@ namespace ipc
         // ****************************** //
         tcp_async_server(std::uint16_t server_port) : m_fd_passive(::socket(AF_INET, SOCK_STREAM, 0))
         {
-            std::cout << "[TCP async server]" << std::flush;
+            std::cout << "\n[TCP async server]" << std::flush;
             if (m_fd_passive < 0)
             {
-                throw std::runtime_error("[TCP async server] Cannot create socket");
+                throw std::runtime_error("[TCP async server] Fail to create socket");
             }
 
 
@@ -33,7 +33,7 @@ namespace ipc
 
             if (::bind(m_fd_passive, (struct sockaddr*)(&server_addr), sizeof(server_addr)) < 0)
             {
-                throw std::runtime_error("[TCP async server] Cannot bind socket");
+                throw std::runtime_error("[TCP async server] Fail to bind");
             }
         
 
@@ -42,38 +42,41 @@ namespace ipc
             // **************************************** //
             if (!set_socket_non_blocking(m_fd_passive)) 
             {
-                throw std::runtime_error("[TCP async server] Cannot set socket non_blocking");
+                throw std::runtime_error("[TCP async server] Fail to set non-blocking");
             }
 
             if (::listen(m_fd_passive, SOMAXCONN) < 0)
             {
-                throw std::runtime_error("[TCP async server] Cannot listen socket");
+                throw std::runtime_error("[TCP async server] Fail to listen");
+            }
+
+
+            // ************* //
+            // *** Epoll *** //
+            // ************* //
+            m_fd_epoll = ::epoll_create1(0);
+            if (m_fd_epoll < 0)
+            {
+                throw std::runtime_error("[TCP async server] Fail to create epoll");
+            }
+
+            if (!epoll_add_in_event(m_fd_epoll, m_fd_passive))
+            {
+                throw std::runtime_error("[TCP async server] Fail to add fd to epoll");
             }
         }
 
        ~tcp_async_server() 
         {
-            if (m_fd_passive > 0)  ::close(m_fd_passive);
-            if (m_fd_epoll   > 0)  ::close(m_fd_epoll);
+            close_all_active_fds();
+
+            if (m_fd_passive > 0) ::close(m_fd_passive);
+            if (m_fd_epoll   > 0) ::close(m_fd_epoll);
         }
 
     public:
-        void run()
+        void run() 
         {
-            m_fd_epoll = ::epoll_create1(0);
-            if (m_fd_epoll < 0)
-            {
-                throw std::runtime_error("[TCP async server] Cannot create epoll");
-            }
-
-            if (!add_fd_to_epoll(m_fd_epoll, m_fd_passive))
-            {
-                throw std::runtime_error("[TCP async server] Cannot add passive socket to epoll");
-            }
-            
-            // ****************** //
-            // *** Event loop *** //
-            // ****************** //
             static const std::uint32_t MAX_NUM_EVENTS = 64;
             epoll_event events[MAX_NUM_EVENTS];
 
@@ -82,28 +85,30 @@ namespace ipc
                 int num_events = epoll_wait(m_fd_epoll, events, MAX_NUM_EVENTS, -1); // <--- thread is blocked here 
                 for(int n=0; n!=num_events; ++n)
                 {
-                    // ******************************* //
-                    // *** Event 1 : Disconnection *** //
-                    // ******************************* //
+                    int fd = events[n].data.fd;
+
+                    // ************************** //
+                    // *** Event : disconnect *** //
+                    // ************************** //
                     if ((events[n].events & EPOLLERR) ||
                         (events[n].events & EPOLLHUP) ||
                        !(events[n].events & EPOLLIN ))
                     {
-                        callback_disconnect(events[n].data.fd);
+                        callback_disconnect(fd);
                     }
-                    // ******************************** //
-                    // *** Event 2 : New connection *** //
-                    // ******************************** //
-                    else if (events[n].data.fd == m_fd_passive)
+                    // *********************** //
+                    // *** Event : connect *** //
+                    // *********************** //
+                    else if (fd == m_fd_passive)
                     {
-                        callback_accept(events[n].data.fd);
+                        callback_accept(fd);
                     }
-                    // ****************************** //
-                    // *** Event 3 : Message recv *** //
-                    // ****************************** //
+                    // ******************** //
+                    // *** Event : recv *** //
+                    // ******************** //
                     else
                     {
-                        callback_recv(events[n].data.fd);
+                        callback_recv(fd);
                     }
                 }
             }
@@ -112,7 +117,7 @@ namespace ipc
     private:
         void callback_disconnect(int fd_active)
         {
-            std::cout << "\n[TCP async server] Disconnect (rare) from " << m_fd2ip[fd_active] << std::flush;
+            std::cout << "\n[TCP async server] Disconnect from client " << ip(fd_active) << " (rare path)" << std::flush;
             close_active_fd(fd_active);
         }
 
@@ -127,21 +132,21 @@ namespace ipc
             int fd_active = accept(fd_passive, (struct sockaddr*)(&client_addr), &size); 
             if (fd_active < 0)
             {
-                std::cout << "[TCP async server] Cannot accept connection, continue ...";
+                std::cout << "\n[TCP async server] Fail to accept, continue ...";
             }
             else
             {
-                m_fd2ip[fd_active] = get_ip(client_addr);
-                std::cout << "\n[TCP sync server] Connection from " << get_ip(client_addr) << std::flush;
+                m_fd_active_map[fd_active] = get_ip(client_addr);
+                std::cout << "\n[TCP sync server] Connection from client " << get_ip(client_addr) << std::flush;
 
                 if (!set_socket_non_blocking(fd_active))
                 {
-                    std::cout << "\n[TCP async server] Cannot set socket non_blocking, continue ...";
+                    std::cout << "\n[TCP async server] Fail to set non-blocking, continue ...";
                 }
 
-                if (!add_fd_to_epoll(m_fd_epoll, fd_active))
+                if (!epoll_add_in_event(m_fd_epoll, fd_active))
                 {
-                    std::cout << "\n[TCP async server] Cannot add active socket to epoll, continue ...";
+                    std::cout << "\n[TCP async server] Fail to add fd to epoll, continue ...";
                 }
             }
         }
@@ -151,38 +156,81 @@ namespace ipc
             // **************************** //
             // *** Step 5 : recv & send *** //
             // **************************** //
-            char buf[4096];
+            // * need while a loop to ensure all data are consumed
+            // * "errno" will be EAGAIN when all data are consumed
+            // * "errno" is a thread-local global variable
+            // * EAGAIN means epoll wait again
+            //
+            bool done = false;
+            while(!done)
+            {
+                char buf[32]; // use small size intentionally 
 
-            int recv_size = ::recv(fd_active, buf, sizeof(buf), 0);
-            if (recv_size > 0)
-            {
-                :: send(fd_active, buf, recv_size, 0);
-            //  ::write(fd_active, buf, recv_size);
+                int recv_size = ::recv(fd_active, buf, sizeof(buf), 0);
+                if (recv_size > 0)
+                {
+                    :: send(fd_active, buf, recv_size, 0);
+                //  ::write(fd_active, buf, recv_size);
+                }
+                else if (recv_size == 0)
+                {
+                    std::cout << "\n[TCP async server] Disconnect from client " << ip(fd_active) << std::flush;
+                    close_active_fd(fd_active);
+                    return;
+                }
+                else if (errno != EAGAIN)
+                {
+                    std::cout << "\n[TCP async server] Fail to recv from client " << ip(fd_active) << std::flush;
+                    close_active_fd(fd_active);
+                    return;
+                }
+                else 
+                {
+                    done = true; // no more to read
+                }
             }
-            else if (recv_size == 0)
+        }
+
+    private:
+        std::string ip(int fd) const
+        {
+            auto iter = m_fd_active_map.find(fd);
+            if (iter != m_fd_active_map.end())
             {
-                std::cout << "\n[TCP async server] Disconnect from " << m_fd2ip[fd_active] << std::flush;
-                close_active_fd(fd_active);
+                return iter->second;
             }
-            else
-            {
-                std::cout << "\n[TCP async server] Read failure" << std::flush;
-                close_active_fd(fd_active);
-            }
+            return "unknown";
         }
 
         void close_active_fd(int fd)
         {
-            delete_fd_from_epoll(m_fd_epoll, fd);
+            epoll_delete(m_fd_epoll, fd);
             ::close(fd);
+            
+            auto iter = m_fd_active_map.find(fd);
+            if (iter != m_fd_active_map.end())
+            {
+                m_fd_active_map.erase(iter); // avoid duplicated close() on destruction
+            }
+        }
+        
+        void close_all_active_fds()
+        {
+            for(auto& x:m_fd_active_map)
+            {
+                close_active_fd(x.first);
+            }
         }
 
     private:
-        int m_fd_passive;
         int m_fd_epoll;
+        int m_fd_passive;
 
-    private:
-        std::unordered_map<int, std::string> m_fd2ip;
+        //****************** //
+        // key   = active fd
+        // value = active IP
+        //****************** //
+        std::unordered_map<int, std::string> m_fd_active_map;
     };
 }
 
