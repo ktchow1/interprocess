@@ -28,7 +28,6 @@ namespace ipc
             m_server_addr.sin_family      = AF_INET;
             m_server_addr.sin_addr.s_addr = inet_addr(server_ip.c_str());
             m_server_addr.sin_port        = htons(server_port);
-        //  inet_aton(server_ip.c_str(), &m_server_addr.sin_addr);
         }
         
        ~udp_unicast_client()

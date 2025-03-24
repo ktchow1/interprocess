@@ -162,7 +162,12 @@ int main(int argc, char* argv[])
         // ********************* //
         else if (arg == "ms" || arg == "udp_multicast_server") 
         {
-            test_udp_multicast_server("239.0.0.1", 12345);
+            ipc::udp_multicast_server server
+            {
+                "239.0.0.1",    
+                get_uint(argc, argv, 2, 12345)
+            };
+            server.run();
         }
         else if (arg == "mc" || arg == "udp_multicast_client")
         {

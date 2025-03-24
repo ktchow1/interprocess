@@ -1,5 +1,6 @@
 #pragma once
 #include<socket.h>
+#include<thread>
 
 
 namespace ipc
@@ -28,6 +29,37 @@ namespace ipc
             m_group_addr.sin_family      = AF_INET;
             m_group_addr.sin_addr.s_addr = inet_addr(multicast_group_ip.c_str());
             m_group_addr.sin_port        = htons(multicast_group_port);
+        }
+
+       ~udp_multicast_server()
+        {
+            if (m_fd > 0) ::close(m_fd);
+        }
+
+    public:
+        void run()
+        {
+            std::uint32_t n = 0;
+            while(true) 
+            {
+                std::string message = std::string("This is multicast message ") + std::to_string(n); 
+                ++n;
+
+                // ********************* //
+                // *** Step 5 : send *** //
+                // ********************* //
+                if (::sendto(m_fd, message.c_str(), message.size(), 0, (const sockaddr*)(&m_group_addr), sizeof(m_group_addr)) < 0) 
+                {
+                    m_dbg.throw_exception("Fail to send");
+                    close(m_fd);
+                    return;
+                } 
+                else 
+                {
+                    m_dbg.log("Sent message: ", message);
+                }
+                std::this_thread::sleep_for(std::chrono::seconds(2));
+            }
         }
 
     private:
