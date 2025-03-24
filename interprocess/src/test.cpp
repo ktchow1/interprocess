@@ -9,11 +9,12 @@
 #include<udp_unicast_client.h>
 #include<udp_multicast_server.h>
 #include<udp_multicast_client.h>
+#include<pipe.h>
 
 
+void test_ipc_named_pipe(bool);
 
 // void test_ipc_unnamed_pipe()
-// void test_ipc_named_pipe(bool)
 // void test_ipc_shared_memory()
 
 
@@ -178,8 +179,25 @@ int main(int argc, char* argv[])
             };
             client.run();
         }
-//      else if (arg == "npp" || arg == "named_pipe_producer")      test_ipc_named_pipe(true);
-//      else if (arg == "npc" || arg == "named_pipe_consumer")      test_ipc_named_pipe(false);
+
+
+        // ****************** //
+        // *** Named pipe *** //
+        // ****************** //
+        else if (arg == "npp" || arg == "named_pipe_producer") 
+        {
+            test_ipc_named_pipe(true);
+        }
+        else if (arg == "npc" || arg == "named_pipe_consumer")  
+        {
+            test_ipc_named_pipe(false);
+        }
+
+
+
+
+
+
 //      else if (arg == "up"  || arg == "unnamed_pipe")             test_ipc_unnamed_pipe();
 //      else if (arg == "sm"  || arg == "shared_memory")            test_ipc_shared_memory();
         else print_manual();

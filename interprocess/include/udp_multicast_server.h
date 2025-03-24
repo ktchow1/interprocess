@@ -31,9 +31,11 @@ namespace ipc
             m_group_addr.sin_port        = htons(multicast_group_port);
 
 
-            // ******************************************************************** //
-            // Optional : Set TTL (time-to-live), determines max num of ROUTER-HOPS 
-            // ******************************************************************** //
+            // *************************** //
+            // *** Step 4 : set option *** //
+            // *************************** //
+            // Set TTL (time-to-live), determines max num of ROUTER-HOPS (optional)
+
         //  int ttl = 1;
         //  if (setsockopt(m_fd, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(ttl)) < 0) 
         //  {

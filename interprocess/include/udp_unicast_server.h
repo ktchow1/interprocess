@@ -34,10 +34,10 @@ namespace ipc
                 m_dbg.throw_exception("Fail to bind");
             }
 
-            // ************************ //
-            // *** Step 3 : skipped *** //
-            // *** Step 4 : skipped *** //
-            // ************************ //
+            // ************************** //
+            // *** Step 3 : no option *** //
+            // *** Step 4 : no accept *** //
+            // ************************** //
         }
 
        ~udp_unicast_server()

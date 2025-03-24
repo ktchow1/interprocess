@@ -123,9 +123,9 @@ namespace ipc
 
         void callback_accept(int fd_passive)
         {
-            // **************************************************** //
-            // *** Step 4 : accept connection and create socket *** //
-            // **************************************************** //
+            // ****************************** //
+            // *** Step 4 : accept client *** //
+            // ****************************** //
             sockaddr_in client_addr;
             socklen_t size = sizeof(client_addr);
 
