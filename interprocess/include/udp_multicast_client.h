@@ -2,6 +2,31 @@
 #include<socket.h>
 
 
+
+namespace ipc
+{
+    class udp_multicast_client
+    {
+    public:
+        udp_multicast_client(const std::string&  multicast_group_ip, 
+                                   std::uint16_t multicast_group_port)
+                                   : m_fd(::socket(AF_INET, SOCK_DGRAM, 0)) 
+                                   , m_dbg("[UDP mulitcast client]")
+        {
+            m_dbg.log();
+            if (m_fd < 0)
+            {
+                m_dbg.throw_exception("Fail to create");
+            }
+        }
+
+    private:
+        int m_fd;
+        debugger m_dbg;
+    };
+}
+
+
 void test_udp_multicast_client(const std::string& multicast_group, std::uint32_t port)
 {
     constexpr std::uint32_t buffer_size = 1024;
@@ -21,14 +46,6 @@ void test_udp_multicast_client(const std::string& multicast_group, std::uint32_t
     // 1. allow multi clients in same host to bind to same port, otherwise, result in "address already in use" ERROR
     // 2. join multicast group
 
-
-    // Allow multiple sockets to use the same port
-    int reuse = 1;
-    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0) 
-    {
-        close(sockfd);
-        throw std::runtime_error("[UDP multicast client] Cannot set socket option");
-    }
 
     // Configure local address
     memset(&local_addr, 0, sizeof(local_addr));
@@ -52,6 +69,14 @@ void test_udp_multicast_client(const std::string& multicast_group, std::uint32_t
         throw std::runtime_error("[UDP multicast client] Cannot set socket option - join group");
     }
 
+    // Allow multiple sockets to use the same port
+    int reuse = 1;
+    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0) 
+    {
+        close(sockfd);
+        throw std::runtime_error("[UDP multicast client] Cannot set socket option");
+    }
+
     std::cout << "Listening for multicast messages on " << multicast_group << ":" << port << std::endl;
     while (true) 
     {
@@ -73,19 +98,3 @@ void test_udp_multicast_client(const std::string& multicast_group, std::uint32_t
 
 
 
-// bind       : cares about the multicast port and interface to listen on, no multicast group address
-// setsockopt : cares about the multicast address
-//
-//
-// with the setup, we can join 2 groups on same port
-//
-//
-// bind(...);
-// multicast_request.imr_multiaddr.s_addr = "239.0.0.1";
-// if (setsockopt(sockfd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &multicast_request, sizeof(multicast_request)) < 0)
-// multicast_request.imr_multiaddr.s_addr = "239.0.0.2";
-// if (setsockopt(sockfd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &multicast_request, sizeof(multicast_request)) < 0)
-// 
-//
-//
-//  If you join 2 groups on different ports then you need 2 socket, just duplicate the codes, receive once from socket 1 and once from socket 2, or use epoll
