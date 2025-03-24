@@ -69,7 +69,7 @@ namespace ipc
                 {
                     m_dbg.log("Sent message: ", message);
                 }
-                std::this_thread::sleep_for(std::chrono::seconds(2));
+                std::this_thread::sleep_for(std::chrono::seconds(1));
             }
         }
 

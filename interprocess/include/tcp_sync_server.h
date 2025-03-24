@@ -58,8 +58,10 @@ namespace ipc
 
     private:
         int m_fd_active;
-        sockaddr_in m_client_addr;
         debugger m_dbg;
+
+    private:
+        sockaddr_in m_client_addr;
     };
 }
 

@@ -171,7 +171,12 @@ int main(int argc, char* argv[])
         }
         else if (arg == "mc" || arg == "udp_multicast_client")
         {
-            test_udp_multicast_client("239.0.0.1", 12345);
+            ipc::udp_multicast_client client
+            {
+                "239.0.0.1",    
+                get_uint(argc, argv, 2, 12345)
+            };
+            client.run();
         }
 //      else if (arg == "npp" || arg == "named_pipe_producer")      test_ipc_named_pipe(true);
 //      else if (arg == "npc" || arg == "named_pipe_consumer")      test_ipc_named_pipe(false);
