@@ -14,12 +14,12 @@ namespace ipc
         // ****************************** //
         // *** Step 1 : create socket *** //
         // ****************************** //
-        tcp_async_server(std::uint16_t server_port) : m_fd_passive(::socket(AF_INET, SOCK_STREAM, 0))
+        tcp_async_server(std::uint16_t server_port) : m_fd_passive(::socket(AF_INET, SOCK_STREAM, 0)), m_dbg("[TCP async server]")
         {
-            std::cout << "\n[TCP async server]" << std::flush;
+            m_dbg.log();
             if (m_fd_passive < 0)
             {
-                throw std::runtime_error("[TCP async server] Fail to create socket");
+                m_dbg.throw_exception("Fail to create socket");
             }
 
 
@@ -33,7 +33,7 @@ namespace ipc
 
             if (::bind(m_fd_passive, (struct sockaddr*)(&server_addr), sizeof(server_addr)) < 0)
             {
-                throw std::runtime_error("[TCP async server] Fail to bind");
+                m_dbg.throw_exception("Fail to bind");
             }
         
 
@@ -42,12 +42,12 @@ namespace ipc
             // **************************************** //
             if (!set_socket_non_blocking(m_fd_passive)) 
             {
-                throw std::runtime_error("[TCP async server] Fail to set non-blocking");
+                m_dbg.throw_exception("Fail to set non-blocking");
             }
 
             if (::listen(m_fd_passive, SOMAXCONN) < 0)
             {
-                throw std::runtime_error("[TCP async server] Fail to listen");
+                m_dbg.throw_exception("Fail to listen");
             }
 
 
@@ -57,12 +57,12 @@ namespace ipc
             m_fd_epoll = ::epoll_create1(0);
             if (m_fd_epoll < 0)
             {
-                throw std::runtime_error("[TCP async server] Fail to create epoll");
+                m_dbg.throw_exception("Fail to create epoll");
             }
 
             if (!epoll_add_in_event(m_fd_epoll, m_fd_passive))
             {
-                throw std::runtime_error("[TCP async server] Fail to add fd to epoll");
+                m_dbg.throw_exception("Fail to add socket to epoll");
             }
         }
 
@@ -117,7 +117,7 @@ namespace ipc
     private:
         void callback_disconnect(int fd_active)
         {
-            std::cout << "\n[TCP async server] Disconnect from client " << ip(fd_active) << " (rare path)" << std::flush;
+            m_dbg.log("Disconnect from client ", ip(fd_active), " (rare path)");
             close_active_fd(fd_active);
         }
 
@@ -132,21 +132,21 @@ namespace ipc
             int fd_active = accept(fd_passive, (struct sockaddr*)(&client_addr), &size); 
             if (fd_active < 0)
             {
-                std::cout << "\n[TCP async server] Fail to accept, continue ...";
+                m_dbg.log("Fail to accept, continue ...");
             }
             else
             {
                 m_fd_active_map[fd_active] = get_ip(client_addr);
-                std::cout << "\n[TCP sync server] Connection from client " << get_ip(client_addr) << std::flush;
+                m_dbg.log("Connection from client ", get_ip(client_addr));
 
                 if (!set_socket_non_blocking(fd_active))
                 {
-                    std::cout << "\n[TCP async server] Fail to set non-blocking, continue ...";
+                    m_dbg.log("Fail to set non-blocking, continue ...");
                 }
 
                 if (!epoll_add_in_event(m_fd_epoll, fd_active))
                 {
-                    std::cout << "\n[TCP async server] Fail to add fd to epoll, continue ...";
+                    m_dbg.log("Fail to add socket to epoll, continue ...");
                 }
             }
         }
@@ -174,13 +174,13 @@ namespace ipc
                 }
                 else if (recv_size == 0)
                 {
-                    std::cout << "\n[TCP async server] Disconnect from client " << ip(fd_active) << std::flush;
+                    m_dbg.log("Disconnect from client ", ip(fd_active));
                     close_active_fd(fd_active);
                     return;
                 }
                 else if (errno != EAGAIN)
                 {
-                    std::cout << "\n[TCP async server] Fail to recv from client " << ip(fd_active) << std::flush;
+                    m_dbg.log("Fail to recv from client ", ip(fd_active));
                     close_active_fd(fd_active);
                     return;
                 }
@@ -231,6 +231,7 @@ namespace ipc
         // value = active IP
         //****************** //
         std::unordered_map<int, std::string> m_fd_active_map;
+        debugger m_dbg;
     };
 }
 

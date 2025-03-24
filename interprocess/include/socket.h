@@ -15,6 +15,32 @@
 #include <fcntl.h>
 
 
+namespace ipc
+{
+    class debugger
+    {
+    public:
+        explicit debugger(const std::string& name) : m_name(name)
+        {
+        }
+
+        void throw_exception(const std::string& ex)
+        {
+            throw std::runtime_error(m_name + " " + ex);
+        }
+
+        template<typename...ARGS>
+        void log(ARGS&&...args)
+        {
+            (std::cout << "\n" << m_name << " " << ... << std::forward<ARGS>(args)) << std::flush;
+        }
+
+    private:
+        std::string m_name;
+    };
+}
+
+
 // ********************************************************************************************************************* //
 // About struct sockaddr
 // * struct sockaddr_in            is for IP_v4

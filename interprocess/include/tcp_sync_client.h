@@ -13,12 +13,12 @@ namespace ipc
         tcp_sync_client(const std::string&  server_ip, 
                               std::uint16_t server_port, 
                               std::uint16_t client_port) // 0 for OS-pick port, >0 for custom-pick port
-                              : m_fd(::socket(AF_INET, SOCK_STREAM, 0))
+                              : m_fd(::socket(AF_INET, SOCK_STREAM, 0)), m_dbg("[TCP sync client]")
         {
-            std::cout << "\n[TCP sync client]" << std::flush;
+            m_dbg.log();
             if (m_fd < 0)
             {
-                throw std::runtime_error("[TCP sync client] Fail to create");
+                m_dbg.throw_exception("Fail to create");
             }
 
 
@@ -37,7 +37,7 @@ namespace ipc
 
                 if (::bind(m_fd, (struct sockaddr*)(&client_addr), sizeof(client_addr)) < 0)
                 {
-                    throw std::runtime_error("[TCP sync client] Fail to bind");
+                    m_dbg.throw_exception("Fail to bind");
                 } 
             }
 
@@ -57,7 +57,7 @@ namespace ipc
 
                 if (::connect(m_fd, (struct sockaddr*)(&server_addr), sizeof(server_addr)) < 0)
                 {
-                    throw std::runtime_error("[TCP sync client] Fail to connect");
+                    m_dbg.throw_exception("Fail to connect");
                 }
             }
         }
@@ -73,7 +73,7 @@ namespace ipc
         {
             while(true)
             {
-                std::cout << "\n[TCP sync client] Send message: " << std::flush;
+                m_dbg.log("Send message: ");
                 std::string message;
                 std::getline(std::cin, message); 
 
@@ -83,7 +83,7 @@ namespace ipc
                 // ********************* //
                 if (::send(m_fd, message.c_str(), message.size(), 0) < 0)
                 {
-                    throw std::runtime_error("[TCP sync client] Fail to send");
+                    m_dbg.throw_exception("Fail to send");
                 }
 
 
@@ -95,16 +95,16 @@ namespace ipc
                 int recv_size = ::recv(m_fd, buf, sizeof(buf), 0);
                 if (recv_size > 0)
                 {
-                    std::cout << "\n[TCP sync client] Recv message: " << std::string{buf, (size_t)recv_size} << std::flush;
+                    m_dbg.log("Recv message: ", std::string{buf, (size_t)recv_size});
                 }
                 else if (recv_size == 0)
                 {
-                    std::cout << "\n[TCP sync client] Disconnect from server" << std::flush;
+                    m_dbg.log("Disconnect from server");
                     return;
                 }
                 else
                 {
-                    std::cout << "\n[TCP sync client] Fail to recv" << std::flush;
+                    m_dbg.log("Fail to recv");
                     return;
                 }
             }
@@ -112,5 +112,6 @@ namespace ipc
 
     private:
         int m_fd;
+        debugger m_dbg;
     };
 }

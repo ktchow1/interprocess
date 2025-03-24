@@ -12,21 +12,6 @@
 
 
 
-
-void test_udp_unicast_server()
-{
-    std::cout << "[UDP unicast server]" << std::flush;
-    ipc::udp_unicast_server server(12345);
-    server.run();
-}
-
-void test_udp_unicast_client()
-{
-    std::cout << "[UDP unicast client]" << std::flush;
-    ipc::udp_unicast_client client("127.0.0.1", 12345);
-    client.run();
-}
-
 // void test_ipc_unnamed_pipe()
 // void test_ipc_named_pipe(bool)
 // void test_ipc_shared_memory()
@@ -59,6 +44,19 @@ std::string get_str(int argc, char* argv[], std::uint32_t index, std::string def
 //     tcp_async_server vs     tcp_async_client = 1:N or M:1
 //   udp_unicast_server vs   udp_unicast_client = 1:N
 // udp_multicast_server vs udp_multicast_client = 1:N or M:1
+//
+// ********************************************************* //
+// Example 1, running all TCP server/client together :
+// ./build/debug/Test ss  
+// ./build/debug/Test as 12346
+// ./build/debug/Test ac 12345 12346
+// ./build/debug/Test sc 12346
+//
+// Example 2, unicast to multi clients
+// ./build/debug/Test us
+// ./build/debug/Test uc
+// ./build/debug/Test uc
+//
 // ********************************************************* //
 void print_manual()
 {
@@ -69,7 +67,7 @@ void print_manual()
     std::cout << "\n./build/debug/Test as (or tcp_async_server)     [server_port]               "; // use epoll
     std::cout << "\n./build/debug/Test ac (or tcp_async_client)     [server_port]...            "; // use epoll, support   connection to multi servers
     std::cout << "\n./build/debug/Test us (or udp_unicast_server)   [server_port]               "; //  no epoll, support  publication to multi clients
-    std::cout << "\n./build/debug/Test uc (or udp_unicast_client)   [server_port] [client_port] "; //            support  self_pick_client_port
+    std::cout << "\n./build/debug/Test uc (or udp_unicast_client)   [server_port]               "; //            support  self_pick_client_port
     std::cout << "\n./build/debug/Test ms (or udp_multicast_server) [server_port]               ";
     std::cout << "\n./build/debug/Test mc (or udp_multicast_client) [server_port]...            "; // use epoll, support subscription to multi groups
     std::cout << "\n";
@@ -77,6 +75,7 @@ void print_manual()
     std::cout << "\n... means variadic";
     std::cout << "\nyou can connect tcp_async_server from tcp_sync_client ot tcp_async_client";
     std::cout << "\nyou can connect  tcp_sync_server from tcp_sync_client ot tcp_async_client";
+
 }
 
 
@@ -141,11 +140,20 @@ int main(int argc, char* argv[])
         // ******************* //
         else if (arg == "us" || arg == "udp_unicast_server")   
         {
-            test_udp_unicast_server();
+            ipc::udp_unicast_server server
+            {
+                get_uint(argc, argv, 2, 12345)
+            };
+            server.run();
         }
         else if (arg == "uc" || arg == "udp_unicast_client")   
         {
-            test_udp_unicast_client();
+            ipc::udp_unicast_client client
+            {
+                "127.0.0.1",    
+                get_uint(argc, argv, 2, 12345)
+            };
+            client.run();
         }
 
 

@@ -2,6 +2,56 @@
 #include<socket.h>
 
 
+namespace ipc
+{
+    class udp_multicast_server
+    {
+    public:
+        // ****************************** //
+        // *** Step 1 : create socket *** //
+        // ****************************** //
+        udp_multicast_server(const std::string&  multicast_group_ip, 
+                                   std::uint16_t multicast_group_port)
+                                   : m_fd(::socket(AF_INET, SOCK_DGRAM, 0)) 
+                                   , m_dbg("[UDP mulitcast server]")
+        {
+            m_dbg.log();
+            if (m_fd < 0)
+            {
+                m_dbg.throw_exception("Fail to create");
+            }
+
+
+            // ************************************** //
+            // *** Step 2 : config addr (no bind) *** //
+            // ************************************** //
+            m_group_addr.sin_family      = AF_INET;
+            m_group_addr.sin_addr.s_addr = inet_addr(multicast_group_ip.c_str());
+            m_group_addr.sin_port        = htons(multicast_group_port);
+        }
+
+    private:
+        int m_fd;
+        debugger m_dbg;
+
+    private:
+        sockaddr_in m_group_addr;
+    };
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 void test_udp_multicast_server(const std::string& multicast_group, std::uint32_t port)
 {
     int sockfd;

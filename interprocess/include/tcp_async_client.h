@@ -26,9 +26,9 @@ namespace ipc
 
     public:
         tcp_async_client(const std::string& server_ip,
-                         const std::vector<std::uint16_t>& server_ports)
+                         const std::vector<std::uint16_t>& server_ports) : m_dbg("[TCP async client]")
         {
-            std::cout << "\n[TCP async client]" << std::flush;
+            m_dbg.log();
 
 
             // ************* //
@@ -37,7 +37,7 @@ namespace ipc
             m_fd_epoll = ::epoll_create1(0); // BUG1 : Dont put epoll creation into the for loop, otherwise only last fd is monitored
             if (m_fd_epoll < 0)
             {
-                throw std::runtime_error("[TCP async client] Fail to create epoll");
+                m_dbg.throw_exception("Fail to create epoll");
             }
 
             for(const auto& server_port:server_ports)
@@ -48,7 +48,7 @@ namespace ipc
                 int fd = ::socket(AF_INET, SOCK_STREAM, 0);
                 if (fd < 0)
                 {
-                    throw std::runtime_error("[TCP async client] Fail to create socket");
+                    m_dbg.throw_exception("Fail to create socket");
                 }
 
 
@@ -63,7 +63,7 @@ namespace ipc
                 // ******************************* //
                 if (!set_socket_non_blocking(fd)) 
                 {
-                    throw std::runtime_error("[TCP async client] Fail to set non-blocking");
+                    m_dbg.throw_exception("Fail to set non-blocking");
                 }
 
 
@@ -75,14 +75,14 @@ namespace ipc
                 server_addr.sin_addr.s_addr = inet_addr(server_ip.c_str());
                 server_addr.sin_port        = htons(server_port);
 
-                if (::connect(fd, (struct sockaddr*)(&server_addr), sizeof(server_addr)) < 0 && 
-                    errno != EINPROGRESS) // <--- BUG2 : This is critical for async client, dont miss it.
+                // BUG2 : Dont miss checking of errno. This is critical for async client.
+                if (::connect(fd, (struct sockaddr*)(&server_addr), sizeof(server_addr)) < 0 && errno != EINPROGRESS) 
                 {
-                    throw std::runtime_error("[TCP async client] Fail to connect");
+                    m_dbg.throw_exception("Fail to connect");
                 }
 
                 m_fd_map[fd] = std::make_pair(get_ip(server_addr), status::requested); 
-                std::cout << "\n[TCP async client] Connection to server " << get_ip(server_addr) << ", status::requested" << std::flush;
+                m_dbg.log("Connection to server ", get_ip(server_addr), " status::requested");
 
 
                 // ************* //
@@ -90,7 +90,7 @@ namespace ipc
                 // ************* //
                 if (!epoll_add_in_out_event(m_fd_epoll, fd))
                 {
-                    throw std::runtime_error("[TCP async client] Fail to add fd to epoll");
+                    m_dbg.throw_exception("Fail to add socket to epoll");
                 }
             }
         }
@@ -138,7 +138,7 @@ namespace ipc
                     }
                 }
             }
-            std::cout << "\n[TCP async client] Disconnect from all servers, client terminated" << std::flush;
+            m_dbg.log("Disconnect from all servers");
         }
 
     private:
@@ -148,19 +148,19 @@ namespace ipc
             if (connected)
             {
                 m_fd_map[fd].second = status::connected;
-                std::cout << "\n[TCP async client] Connection to server " << ip(fd) << ", status::connected" << std::flush;
+                m_dbg.log("Connection to server ", ip(fd), " status::connected");
             }
             else
             {
                 m_fd_map[fd].second = status::disconnected;
-                std::cout << "\n[TCP async client] Connection to server " << ip(fd) << ", status::disconnected" << std::flush;
+                m_dbg.log("Connection to server ", ip(fd), " status::disconnected");
                 close_fd(fd);
             }
         }
 
         void callback_send(int fd)
         {
-            std::cout << "\n[TCP async client] Send message, server " << ip(fd) << ": " << std::flush;
+            m_dbg.log("Send message, server ", ip(fd), ": ");
             std::string message;
             std::getline(std::cin, message); 
 
@@ -178,13 +178,13 @@ namespace ipc
                 }
                 else if (sent_size == 0)
                 {
-                    std::cout << "\n[TCP async client] Disconnect from server " << ip(fd) << std::flush;
+                    m_dbg.log("Disconnect from server ", ip(fd));
                     close_fd(fd);
                     return;
                 }
                 else
                 {
-                    std::cout << "\n[TCP async client] Fail to send to server " << ip(fd) << std::flush;
+                    m_dbg.log("Fail to send to server ", ip(fd));
                     close_fd(fd);
                     return;
                 }
@@ -205,17 +205,17 @@ namespace ipc
                 int recv_size = ::recv(fd, buf, sizeof(buf), 0);
                 if (recv_size > 0)
                 {
-                    std::cout << "\n[TCP async client] Recv message, server " << ip(fd) << ": " << std::string{buf, (size_t)recv_size} << std::flush;
+                    m_dbg.log("Recv message, server ", ip(fd), ": ", std::string{buf, (size_t)recv_size});
                 }
                 else if (recv_size == 0)
                 {
-                    std::cout << "\n[TCP async client] Disconnect from server " << ip(fd) << std::flush;
+                    m_dbg.log("Disconnect from server ", ip(fd));
                     close_fd(fd);
                     return;
                 }
                 else if (errno != EAGAIN)
                 {
-                    std::cout << "\n[TCP async client] Fail to recv from server " << ip(fd) << std::flush;
+                    m_dbg.log("Fail to recv from server ", ip(fd));
                     close_fd(fd);
                     return;
                 }
@@ -285,6 +285,7 @@ namespace ipc
         // value.second = server status
         // **************************** //
         std::unordered_map<int, std::pair<std::string, status>> m_fd_map; 
+        debugger m_dbg;
     };
 }
 

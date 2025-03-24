@@ -17,9 +17,9 @@ namespace ipc
     class tcp_sync_session
     {
     public:
-        tcp_sync_session(int fd_active, const sockaddr_in& client_addr) : m_fd_active(fd_active), m_client_addr(client_addr)
+        tcp_sync_session(int fd_active, const sockaddr_in& client_addr) : m_fd_active(fd_active), m_client_addr(client_addr), m_dbg("[TCP sync server]")
         {
-            std::cout << "\n[TCP sync server] Connection from client " << get_ip(m_client_addr) << std::flush;
+            m_dbg.log("Connection from client ", get_ip(m_client_addr));
         }
 
        ~tcp_sync_session() 
@@ -45,12 +45,12 @@ namespace ipc
                 }
                 else if (recv_size == 0)
                 {
-                    std::cout << "\n[TCP sync server] Disconnect from client " << get_ip(m_client_addr) << std::flush;
+                    m_dbg.log("Disconnect from client ", get_ip(m_client_addr));
                     return;
                 }
                 else
                 {
-                    std::cout << "\n[TCP sync server] Fail to recv" << std::flush;
+                    m_dbg.log("Fail to recv");
                     return;
                 }
             }
@@ -59,6 +59,7 @@ namespace ipc
     private:
         int m_fd_active;
         sockaddr_in m_client_addr;
+        debugger m_dbg;
     };
 }
 
@@ -71,12 +72,12 @@ namespace ipc
         // ****************************** //
         // *** Step 1 : create socket *** //
         // ****************************** //
-        tcp_sync_server(std::uint16_t server_port) : m_fd_passive(::socket(AF_INET, SOCK_STREAM, 0))
+        tcp_sync_server(std::uint16_t server_port) : m_fd_passive(::socket(AF_INET, SOCK_STREAM, 0)), m_dbg("[TCP sync server]")
         {
-            std::cout << "\n[TCP sync server]" << std::flush;
+            m_dbg.log();
             if (m_fd_passive < 0)
             {
-                throw std::runtime_error("[TCP sync server] Fail to create");
+                m_dbg.throw_exception("Fail to create");
             }
 
 
@@ -90,7 +91,7 @@ namespace ipc
 
             if (::bind(m_fd_passive, (struct sockaddr*)(&server_addr), sizeof(server_addr)) < 0)
             {
-                throw std::runtime_error("[TCP sync server] Fail to bind");
+                m_dbg.throw_exception("Fail to bind");
             }
 
 
@@ -99,7 +100,7 @@ namespace ipc
             // ****************************** //
             if (::listen(m_fd_passive, SOMAXCONN) < 0) // 2nd arg = num of pending connection in queue 
             {
-                throw std::runtime_error("[TCP sync server] Fail to listen");
+                m_dbg.throw_exception("Fail to listen");
             }
         }
 
@@ -129,12 +130,13 @@ namespace ipc
             int fd_active = ::accept(m_fd_passive, (struct sockaddr*)(&client_addr), &size); // unlike bind, pass address of size
             if (fd_active < 0)
             {
-                throw std::runtime_error("[TCP sync server] Fail to accept");
+                m_dbg.throw_exception("Fail to accept");
             }
             return tcp_sync_session(fd_active, client_addr);
         }
 
     private:
         int m_fd_passive;
+        debugger m_dbg;
     };
 }
