@@ -53,7 +53,7 @@ std::string get_str(int argc, char* argv[], std::uint32_t index, std::string def
 // ./build/debug/Test uc
 //
 // ********************************************************* //
-void print_manual()
+void print_menu()
 {
     std::cout << "\nincorrect arg, please run as : ";
     std::cout << "\n";
@@ -73,9 +73,12 @@ void print_manual()
     std::cout << "\n";
     std::cout << "\n[]  means optional";
     std::cout << "\n... means variadic";
-    std::cout << "\nyou can connect tcp_async_server from tcp_sync_client ot tcp_async_client";
-    std::cout << "\nyou can connect  tcp_sync_server from tcp_sync_client ot tcp_async_client";
-
+    std::cout << "\n";
+    std::cout << "\nwe can connect tcp_async_server from tcp_sync_client ot tcp_async_client";
+    std::cout << "\nwe can connect  tcp_sync_server from tcp_sync_client ot tcp_async_client";
+    std::cout << "\nwe can start either server / client first";
+    std::cout << "\nwe can start either producer / consumer first";
+    std::cout << "\nEXCEPT for shared memory, start producer first";
 }
 
 
@@ -204,15 +207,17 @@ int main(int argc, char* argv[])
         // ********************* //
         else if (arg == "smp" || arg == "shared_memory_producer") 
         {
-            ipc::shared_memory_producer();
+            ipc::shared_memory_producer producer{"my_shared_memory"};
+            producer.run();
         }
         else if (arg == "smc" || arg == "shared_memory_consumer") 
         {
-            ipc::shared_memory_consumer();
+            ipc::shared_memory_consumer consumer{"my_shared_memory"};
+            consumer.run();
         }
-        else print_manual();
+        else print_menu();
     }
-    else print_manual();
+    else print_menu();
 
     std::cout << "\n\n\n";
     return 0;
