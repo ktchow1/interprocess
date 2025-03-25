@@ -23,8 +23,10 @@
 // consumer$ cat my_pipe 
 //
 // 2. named pipe cant be created in /mnt
-//    named pipe can  be created in $HOME
+//    named pipe can  be created in $HOME 
 // 3. named pipe can  be created in c++ code using ::mkfifo()
+// 4. do not use "~/my_pipe" as ~ is not identified by ::mkfifo()
+//           use std::getenv("HOME") instead
 //
 //
 // About unnamed pipe
@@ -35,9 +37,8 @@
 // *********************************************************************** //
 namespace ipc
 {
-    void pipe_producer(int& fd, const std::string& name)
+    void pipe_producer(int& fd, debugger& dbg)
     {
-        debugger dbg(name);
         while(true)
         {
             dbg.log("Send message: ");
@@ -53,12 +54,10 @@ namespace ipc
             if (message == "exit" || 
                 message == "quit") break;
         }
-        ::close(fd);
     }
 
-    void pipe_consumer(int& fd, const std::string& name)
+    void pipe_consumer(int& fd, debugger& dbg)
     {
-        debugger dbg(name);
         while(true)
         {
             char buf[4096];
@@ -83,40 +82,94 @@ namespace ipc
             if (message == "exit" || 
                 message == "quit") break;
         }
-        ::close(fd);
     }
 }
 
 
-namespace iopc
+namespace ipc
 {
+    // *************************** //
+    // *** Named pipe producer *** //
+    // *************************** //
+    class named_pipe_producer
+    {
+    public:
+        explicit named_pipe_producer(const std::string& pipe_name) : m_dbg("[named pipe producer]")
+        {
+            m_dbg.log();
+
+            std::string full_name = std::string{std::getenv("HOME")} + "/" + pipe_name;
+            if (::mkfifo(full_name.c_str(), S_IFIFO|0640) < 0)
+            {
+                m_dbg.log("Fail create pipe, as it exists, continue ...");
+            }
+
+            m_fd = ::open(full_name.c_str(), O_CREAT|O_WRONLY, 0755); // <--- blocking until consumer also called open
+            if (m_fd < 0)
+            {
+                m_dbg.throw_exception("Fail open pipe");
+            }
+        }
+
+       ~named_pipe_producer()
+        {
+            if (m_fd > 0) ::close(m_fd);
+        }
+
+    public:
+        void run()
+        {
+            pipe_producer(m_fd, m_dbg); 
+        }
+
+    private:
+        int m_fd;
+        debugger m_dbg;
+    };
 
 
+    // *************************** //
+    // *** Named pipe consumer *** //
+    // *************************** //
+    class named_pipe_consumer
+    {
+    public:
+        explicit named_pipe_consumer(const std::string& pipe_name) : m_dbg("[named pipe consumer]")
+        {
+            m_dbg.log();
+
+            std::string full_name = std::string{std::getenv("HOME")} + "/" + pipe_name;
+            if (::mkfifo(full_name.c_str(), S_IFIFO|0640) < 0)
+            {
+                m_dbg.log("Fail create pipe, as it exists, continue ...");
+            }
+
+            m_fd = ::open(full_name.c_str(), O_RDONLY, 0755); // <--- blocking until producer also called open
+            if (m_fd < 0)
+            {
+                m_dbg.throw_exception("Fail open pipe");
+            }
+        }
+
+       ~named_pipe_consumer()
+        {
+            if (m_fd > 0) ::close(m_fd);
+        }
+
+    public:
+        void run()
+        {
+            pipe_consumer(m_fd, m_dbg); 
+        }
+
+    private:
+        int m_fd;
+        debugger m_dbg;
+    };
 }
 
-void test_ipc_named_pipe(bool is_producer)
-{
   
-    std::string name = std::string{std::getenv("HOME")} + "/my_pipe";
-    if (is_producer)
-    {
-        // give full path please
-    //  ::mkfifo(name.c_str(), S_IFIFO|0640); // 0777
-        int fd = ::open(name.c_str(), O_CREAT|O_WRONLY, 0755);
-        std::cout << "producer fd = " << fd << std::flush;
-        ipc::pipe_producer(fd, "named pipe"); 
-    }
-    else
-    {
-
-
-        ::mkfifo(name.c_str(), S_IFIFO|0640); // 0777
-        int fd = ::open(name.c_str(), O_RDONLY, 0755); 
-        std::cout << "consumer fd = " << fd << std::flush;
-        ipc::pipe_consumer(fd, "named pipe"); // this thing crash, don't know why? 
-    }
-}
-
+/*
 
 void test_ipc_unnamed_pipe()
 {
@@ -137,5 +190,5 @@ void test_ipc_unnamed_pipe()
 }
 
 
-
+*/
 

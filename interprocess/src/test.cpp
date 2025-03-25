@@ -12,12 +12,6 @@
 #include<pipe.h>
 
 
-void test_ipc_named_pipe(bool);
-
-// void test_ipc_unnamed_pipe()
-// void test_ipc_shared_memory()
-
-
 std::uint16_t get_uint(int argc, char* argv[], std::uint32_t index, std::uint16_t default_value)
 {
     std::uint16_t ans = default_value;
@@ -37,7 +31,6 @@ std::string get_str(int argc, char* argv[], std::uint32_t index, std::string def
     }
     return ans;
 }
-
 
 
 // ********************************************************* //
@@ -63,14 +56,16 @@ void print_manual()
 {
     std::cout << "\nincorrect arg, please run as : ";
     std::cout << "\n";
-    std::cout << "\n./build/debug/Test ss (or tcp_sync_server)      [server_port]               ";
-    std::cout << "\n./build/debug/Test sc (or tcp_sync_client)      [server_port] [client_port] "; //            support  self_pick_client_port
-    std::cout << "\n./build/debug/Test as (or tcp_async_server)     [server_port]               "; // use epoll
-    std::cout << "\n./build/debug/Test ac (or tcp_async_client)     [server_port]...            "; // use epoll, support   connection to multi servers
-    std::cout << "\n./build/debug/Test us (or udp_unicast_server)   [server_port]               "; //  no epoll, support  publication to multi clients
-    std::cout << "\n./build/debug/Test uc (or udp_unicast_client)   [server_port]               "; //            support  self_pick_client_port
-    std::cout << "\n./build/debug/Test ms (or udp_multicast_server) [server_port]               ";
-    std::cout << "\n./build/debug/Test mc (or udp_multicast_client) [server_port]...            "; // use epoll, support subscription to multi groups
+    std::cout << "\n./build/debug/Test ss  (or tcp_sync_server)      [server_port]               ";
+    std::cout << "\n./build/debug/Test sc  (or tcp_sync_client)      [server_port] [client_port] "; //            support  self_pick_client_port
+    std::cout << "\n./build/debug/Test as  (or tcp_async_server)     [server_port]               "; // use epoll
+    std::cout << "\n./build/debug/Test ac  (or tcp_async_client)     [server_port]...            "; // use epoll, support   connection to multi servers
+    std::cout << "\n./build/debug/Test us  (or udp_unicast_server)   [server_port]               "; //  no epoll, support  publication to multi clients
+    std::cout << "\n./build/debug/Test uc  (or udp_unicast_client)   [server_port]               "; //            support  self_pick_client_port
+    std::cout << "\n./build/debug/Test ms  (or udp_multicast_server) [server_port]               ";
+    std::cout << "\n./build/debug/Test mc  (or udp_multicast_client) [server_port]...            "; // use epoll, support subscription to multi groups
+    std::cout << "\n./build/debug/Test npp (or named_pipe_producer)                              ";
+    std::cout << "\n./build/debnp/Test npc (or named_pipe_consumer)                              ";
     std::cout << "\n";
     std::cout << "\n[]  means optional";
     std::cout << "\n... means variadic";
@@ -186,11 +181,13 @@ int main(int argc, char* argv[])
         // ****************** //
         else if (arg == "npp" || arg == "named_pipe_producer") 
         {
-            test_ipc_named_pipe(true);
+            ipc::named_pipe_producer producer{"my_pipe"};
+            producer.run();
         }
         else if (arg == "npc" || arg == "named_pipe_consumer")  
         {
-            test_ipc_named_pipe(false);
+            ipc::named_pipe_consumer consumer{"my_pipe"};
+            consumer.run();
         }
 
 
