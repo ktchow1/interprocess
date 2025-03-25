@@ -10,6 +10,7 @@
 #include<udp_multicast_server.h>
 #include<udp_multicast_client.h>
 #include<pipe.h>
+#include<shared_memory.h>
 
 
 std::uint16_t get_uint(int argc, char* argv[], std::uint32_t index, std::uint16_t default_value)
@@ -67,6 +68,8 @@ void print_manual()
     std::cout << "\n./build/debug/Test npp (or named_pipe_producer)                              ";
     std::cout << "\n./build/debnp/Test npc (or named_pipe_consumer)                              ";
     std::cout << "\n./build/debnp/Test upf (or unnamed_pipe_fork_producer_and_consumer)          ";
+    std::cout << "\n./build/debug/Test smp (or shared_memory_producer)                           ";
+    std::cout << "\n./build/debnp/Test smc (or shared_memory_consumer)                           ";
     std::cout << "\n";
     std::cout << "\n[]  means optional";
     std::cout << "\n... means variadic";
@@ -196,10 +199,17 @@ int main(int argc, char* argv[])
         }
 
 
-
-
-
-//      else if (arg == "sm"  || arg == "shared_memory")            test_ipc_shared_memory();
+        // ********************* //
+        // *** shared memory *** //
+        // ********************* //
+        else if (arg == "smp" || arg == "shared_memory_producer") 
+        {
+            ipc::shared_memory_producer();
+        }
+        else if (arg == "smc" || arg == "shared_memory_consumer") 
+        {
+            ipc::shared_memory_consumer();
+        }
         else print_manual();
     }
     else print_manual();

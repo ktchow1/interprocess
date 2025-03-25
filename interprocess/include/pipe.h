@@ -4,37 +4,6 @@
 #include <sys/stat.h>
 
 
-// *********************************************************************** //
-// About named pipe
-// 1. test pipe in bash, using 2 terminals
-//
-// consumer$ cd ~
-// consumer$ mkfifo my_pipe
-// consumer$ cat my_pipe           <--- block here until producer produces
-// producer$ cd ~
-// producer$ echo ABCDEF ~/my_pipe
-//
-// alternatively ...
-//
-// producer$ cd ~
-// consumer$ mkfifo my_pipe
-// producer$ echo ABCDEF ~/my_pipe <--- block here until consumer consumes
-// consumer$ cd ~
-// consumer$ cat my_pipe 
-//
-// 2. named pipe cant be created in /mnt
-//    named pipe can  be created in $HOME 
-// 3. named pipe can  be created in c++ code using ::mkfifo()
-// 4. do not use "~/my_pipe" as ~ is not identified by ::mkfifo()
-//           use std::getenv("HOME") instead
-//
-//
-// About unnamed pipe
-// 1. usually used with fork, so that :
-//    parent process becomes producer
-//    child  process becomes consumer
-//    or vice versa ...
-// *********************************************************************** //
 namespace ipc
 {
     void pipe_producer(int& fd, debugger& dbg)
@@ -86,6 +55,30 @@ namespace ipc
 }
 
 
+// *********************************************************************** //
+// About named pipe
+// 1. test pipe in bash, using 2 terminals
+//
+// consumer$ cd ~
+// consumer$ mkfifo my_pipe
+// consumer$ cat my_pipe           <--- block here until producer produces
+// producer$ cd ~
+// producer$ echo ABCDEF ~/my_pipe
+//
+// alternatively ...
+//
+// producer$ cd ~
+// consumer$ mkfifo my_pipe
+// producer$ echo ABCDEF ~/my_pipe <--- block here until consumer consumes
+// consumer$ cd ~
+// consumer$ cat my_pipe 
+//
+// 2. named pipe cant be created in /mnt
+//    named pipe can  be created in $HOME 
+// 3. named pipe can  be created in c++ code using ::mkfifo()
+// 4. do not use "~/my_pipe" as ~ is not identified by ::mkfifo()
+//           use std::getenv("HOME") instead
+// *********************************************************************** //
 namespace ipc
 {
     // *************************** //
@@ -101,7 +94,7 @@ namespace ipc
             std::string full_name = std::string{std::getenv("HOME")} + "/" + pipe_name;
             if (::mkfifo(full_name.c_str(), S_IFIFO|0640) < 0)
             {
-                m_dbg.log("Fail create pipe, as it exists, continue ...");
+                m_dbg.log("Requested pipe already exists, lets continue ...");
             }
 
             m_fd = ::open(full_name.c_str(), O_CREAT|O_WRONLY, 0755); // <--- blocking until consumer also called open
@@ -141,7 +134,7 @@ namespace ipc
             std::string full_name = std::string{std::getenv("HOME")} + "/" + pipe_name;
             if (::mkfifo(full_name.c_str(), S_IFIFO|0640) < 0)
             {
-                m_dbg.log("Fail create pipe, as it exists, continue ...");
+                m_dbg.log("Requested pipe already exists, lets continue ...");
             }
 
             m_fd = ::open(full_name.c_str(), O_RDONLY, 0755); // <--- blocking until producer also called open
@@ -169,6 +162,13 @@ namespace ipc
 }
 
   
+// ************************************* //
+// About unnamed pipe
+// 1. usually used with fork, so that :
+//    parent process becomes producer
+//    child  process becomes consumer
+//    or vice versa ...
+// ************************************* //
 namespace ipc
 {
     inline void unnamed_pipe_fork_producer_and_consumer()
@@ -179,7 +179,7 @@ namespace ipc
         if (fork() > 0)
         {
             debugger dbg("[unnamed pipe producer]");
-            dbg.log();
+            dbg.log("pid = " + std::to_string(getpid()) + ". ");
 
             ::close(fds[0]); // producer uses fds[1], close unused fds[0]
             ipc::pipe_producer(fds[1], dbg); 
@@ -187,13 +187,11 @@ namespace ipc
         else
         {
             debugger dbg("[unnamed pipe consumer]");
-            dbg.log();
+            dbg.log("pid = " + std::to_string(getpid()) + ". ");
 
             ::close(fds[1]); // consumer uses fds[0], close unused fds[1]
             ipc::pipe_consumer(fds[0], dbg);
         }
     }
-
-
 }
 
