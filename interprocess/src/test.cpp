@@ -66,6 +66,7 @@ void print_manual()
     std::cout << "\n./build/debug/Test mc  (or udp_multicast_client) [server_port]...            "; // use epoll, support subscription to multi groups
     std::cout << "\n./build/debug/Test npp (or named_pipe_producer)                              ";
     std::cout << "\n./build/debnp/Test npc (or named_pipe_consumer)                              ";
+    std::cout << "\n./build/debnp/Test upf (or unnamed_pipe_fork_producer_and_consumer)          ";
     std::cout << "\n";
     std::cout << "\n[]  means optional";
     std::cout << "\n... means variadic";
@@ -176,9 +177,9 @@ int main(int argc, char* argv[])
         }
 
 
-        // ****************** //
-        // *** Named pipe *** //
-        // ****************** //
+        // ************ //
+        // *** pipe *** //
+        // ************ //
         else if (arg == "npp" || arg == "named_pipe_producer") 
         {
             ipc::named_pipe_producer producer{"my_pipe"};
@@ -189,13 +190,15 @@ int main(int argc, char* argv[])
             ipc::named_pipe_consumer consumer{"my_pipe"};
             consumer.run();
         }
+        else if (arg == "upf" || arg == "unnamed_pipe_fork_producer_and_consumer")  
+        {
+            ipc::unnamed_pipe_fork_producer_and_consumer();
+        }
 
 
 
 
 
-
-//      else if (arg == "up"  || arg == "unnamed_pipe")             test_ipc_unnamed_pipe();
 //      else if (arg == "sm"  || arg == "shared_memory")            test_ipc_shared_memory();
         else print_manual();
     }

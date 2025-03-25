@@ -169,26 +169,31 @@ namespace ipc
 }
 
   
-/*
-
-void test_ipc_unnamed_pipe()
+namespace ipc
 {
-    // Fork will copy the pipes, copied pipes can be accessed in parent, child.
-    int fds[2]; 
-    ::pipe(fds); // create both pipes together
+    inline void unnamed_pipe_fork_producer_and_consumer()
+    {
+        int fds[2];  // both pipes are copied by fork, copied pipes can be accessed in parent, child
+        ::pipe(fds); // both pipes are created together
 
-    if (fork() > 0)
-    {
-        ::close(fds[0]); // close unused fd
-        ipc::pipe_producer(fds[1], "unnamed pipe"); // fds[1] is for writer
+        if (fork() > 0)
+        {
+            debugger dbg("[unnamed pipe producer]");
+            dbg.log();
+
+            ::close(fds[0]); // producer uses fds[1], close unused fds[0]
+            ipc::pipe_producer(fds[1], dbg); 
+        }
+        else
+        {
+            debugger dbg("[unnamed pipe consumer]");
+            dbg.log();
+
+            ::close(fds[1]); // consumer uses fds[0], close unused fds[1]
+            ipc::pipe_consumer(fds[0], dbg);
+        }
     }
-    else
-    {
-        ::close(fds[1]); // close unused fd
-        ipc::pipe_consumer(fds[0], "unnamed pipe"); // fds[0] is for reading
-    }
+
+
 }
-
-
-*/
 
